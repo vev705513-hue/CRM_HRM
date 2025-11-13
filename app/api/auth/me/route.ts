@@ -14,6 +14,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing id or email" }, { status: 400 })
     }
 
+    const supabaseAdmin = getSupabaseAdmin()
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
+    }
+
     const { data: userProfile } = await supabaseAdmin
       .from("user_profiles")
       .select("*, memberships(*)")
