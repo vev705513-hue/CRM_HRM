@@ -1,4 +1,4 @@
-// File: lib/supabase/server.ts (Fixed async cookies handling)
+// File: lib/supabase/server.ts (Fixed async cookies handling for Next.js 13+ App Router)
 
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
@@ -8,13 +8,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
  * Creates a Supabase Client for Server Components and Route Handlers.
- * Must be called from an async function to properly handle cookies.
- * Cookies are passed as a function to be evaluated at request time.
+ * Properly handles cookies in async context.
+ * In Next.js 13+ App Router, cookies() is synchronous but must be called
+ * within the server component's execution context.
  */
-export const createSupabaseServerClient = () => {
-  // Return a client with cookies as a getter function
-  // The Auth Helpers will call this function when needed
+export const createSupabaseServerClient = async () => {
+  const cookieStore = await cookies();
+
   return createServerComponentClient({
-    cookies: () => cookies(),
+    cookies: () => cookieStore,
   });
 };
