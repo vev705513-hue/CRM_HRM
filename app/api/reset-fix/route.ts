@@ -2,7 +2,7 @@
 // CHỨC NĂNG: Buộc reset mật khẩu Admin/Tester để tạo hash hợp lệ.
 
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/supabase"; 
+import { getSupabaseAdmin } from "@/lib/supabase/supabase"; 
 
 export async function GET() {
   const USER_TO_FIX = "quachthanhlong2k3@gmail.com"; 
