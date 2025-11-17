@@ -19,7 +19,7 @@ import {
   FileText, 
   LogOut, 
   User,
-  Grape,
+  Grape, // Giữ lại Grape trong imports nhưng không sử dụng ở logo
   Moon,
   Sun,
   Clock,
@@ -132,10 +132,20 @@ const DashboardLayout = ({ children, role = 'staff' }: DashboardLayoutProps) => 
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 w-full border-b bg-card shadow-soft">
         <div className="flex h-16 items-center px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
-              <Grape className="w-6 h-6 text-white" />
+          {/* Sửa: Bọc logo trong một div có thể nhấp và điều hướng */}
+          <div 
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate("/dashboard")}
+          >
+            {/* THAY THẾ BIỂU TƯỢNG LUCIDE BẰNG THẺ IMG */}
+            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center overflow-hidden p-1">
+              <img 
+                src="/LOGO.PNG" // <-- Sử dụng đường dẫn logo tùy chỉnh
+                alt="HRM CRM Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
+            {/* END THAY THẾ */}
             <div>
               <h1 className="text-xl font-heading font-bold">HRM CRM</h1>
               <p className="text-xs text-muted-foreground capitalize">{userRole} Dashboard</p>
