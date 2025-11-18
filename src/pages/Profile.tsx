@@ -10,16 +10,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { 
     Loader2, Upload, User, Mail, Phone, Calendar, Users, Clock, Briefcase, Save, 
-    FileText, Eye, Download
+    FileText, Eye, Download, Info, Zap, GraduationCap 
 } from "lucide-react"; 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator"; 
+import { 
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+} from "@/components/ui/select"; 
 
 // --- SCHEMA & TYPES ---
 
-// Định nghĩa lại các interfaces bị thiếu
 interface Team { id: string; name: string; }
 interface Shift { id: string; name: string; start_time: string; end_time: string; }
 
@@ -29,21 +32,27 @@ interface UserProfile {
     first_name: string | null;
     last_name: string | null;
     avatar_url: string | null;
-    cv_url: string | null; // Cột đã được thêm vào DB
+    cv_url: string | null; 
     team_id: string | null;
     shift_id: string | null;
     phone: string | null;
     date_of_birth: string | null;
-    annual_leave_balance: number;
+    annual_leave_balance: number; // GIỮ LẠI TRONG TYPES vì nó vẫn được SELECT
+    gender: 'Nam' | 'Nữ' | 'Khác' | null;
+    employment_status: 'Employed' | 'Student' | 'Trainee' | null;
+    university: string | null;
+    major: string | null;
 }
-
 
 const profileSchema = z.object({
   first_name: z.string().min(1, "Tên là bắt buộc").max(100),
   last_name: z.string().min(1, "Họ là bắt buộc").max(100),
-  // Dùng refine cho Zod để xử lý giá trị rỗng/null
   phone: z.string().optional().nullable().transform(e => e === "" ? null : e), 
   date_of_birth: z.string().optional().nullable().transform(e => e === "" ? null : e),
+  gender: z.enum(['Nam', 'Nữ', 'Khác']).nullable().optional(),
+  employment_status: z.enum(['Employed', 'Student', 'Trainee']).nullable().optional(),
+  university: z.string().optional().nullable().transform(e => e === "" ? null : e),
+  major: z.string().optional().nullable().transform(e => e === "" ? null : e),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -61,10 +70,8 @@ const Profile = () => {
     const form = useForm<ProfileFormData>({
         resolver: zodResolver(profileSchema),
         defaultValues: {
-            first_name: "",
-            last_name: "",
-            phone: "",
-            date_of_birth: "",
+            first_name: "", last_name: "", phone: "", date_of_birth: "",
+            gender: null, employment_status: null, university: "", major: "",
         },
     });
 
@@ -72,25 +79,12 @@ const Profile = () => {
     const getCvDownloadUrl = useCallback(async (cvUrl: string) => {
         try {
             const bucketName = 'documents';
-            // Tách lấy đường dẫn file (ví dụ: "ab4b.../filename.pdf")
             const pathSegments = cvUrl.split(`${bucketName}/`);
-            
-            if (pathSegments.length < 2) {
-                toast.error("Lỗi: Không tìm thấy đường dẫn file trong URL.");
-                return null;
-            }
-            
+            if (pathSegments.length < 2) { toast.error("Lỗi: Không tìm thấy đường dẫn file trong URL."); return null; }
             const filePath = pathSegments[1]; 
-
-            // Tạo Signed URL (hết hạn sau 5 phút)
-            const { data, error } = await supabase.storage
-                .from(bucketName)
-                .createSignedUrl(filePath, 300); 
-
+            const { data, error } = await supabase.storage.from(bucketName).createSignedUrl(filePath, 300); 
             if (error) throw error;
-            
             return data.signedUrl;
-            
         } catch (error) {
             console.error("Lỗi tạo URL bảo mật:", error);
             toast.error("Không thể tạo liên kết xem CV.");
@@ -102,53 +96,38 @@ const Profile = () => {
     const loadProfile = useCallback(async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                navigate("/login");
-                return;
-            }
+            if (!user) { navigate("/login"); return; }
 
-            // Sửa Dòng 123: Trong hàm loadProfile
+            const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select(`
+                    id, email, first_name, last_name, avatar_url, cv_url,
+                    team_id, shift_id, phone, date_of_birth, annual_leave_balance,
+                    gender, employment_status, university, major
+                `) 
+                .eq("id", user.id)
+                .single();
 
-const { data: profileData, error: profileError } = await supabase
-    .from("profiles")
-    // Chọn tường minh để tránh lỗi
-    .select(`
-        id, email, first_name, last_name, avatar_url, cv_url,
-        team_id, shift_id, phone, date_of_birth, annual_leave_balance
-    `) 
-    .eq("id", user.id)
-    .single();
+            if (profileError) throw profileError;
 
-if (profileError) throw profileError;
-
-// KHẮC PHỤC LỖI 2352: Ép kiểu dữ liệu trả về thành 'any' trước khi ép kiểu sang UserProfile
-const userProfile = profileData as any as UserProfile; // Bắt buộc phải làm
-setProfile(userProfile);
+            const userProfile = profileData as any as UserProfile; // Khắc phục lỗi Typescript
+            setProfile(userProfile);
             
             form.reset({
-                first_name: userProfile.first_name || "",
-                last_name: userProfile.last_name || "",
-                phone: userProfile.phone || "",
-                date_of_birth: userProfile.date_of_birth || "",
+                first_name: userProfile.first_name || "", last_name: userProfile.last_name || "", 
+                phone: userProfile.phone || "", date_of_birth: userProfile.date_of_birth || "",
+                gender: userProfile.gender || null, employment_status: userProfile.employment_status || null,
+                university: userProfile.university || "", major: userProfile.major || "",
             });
 
-            // Lấy Team
+            // Tải thông tin tổ chức
             if (userProfile.team_id) {
-                const { data: teamData } = await supabase
-                    .from("teams")
-                    .select("id, name")
-                    .eq("id", userProfile.team_id)
-                    .single();
+                const { data: teamData } = await supabase.from("teams").select("id, name").eq("id", userProfile.team_id).single();
                 setTeam(teamData as Team);
             } else { setTeam(null); }
 
-            // Lấy Shift
             if (userProfile.shift_id) {
-                const { data: shiftData } = await supabase
-                    .from("shifts")
-                    .select("id, name, start_time, end_time")
-                    .eq("id", userProfile.shift_id)
-                    .single();
+                const { data: shiftData } = await supabase.from("shifts").select("id, name, start_time, end_time").eq("id", userProfile.shift_id).single();
                 setShift(shiftData as Shift);
             } else { setShift(null); }
 
@@ -174,11 +153,11 @@ setProfile(userProfile);
             const { error } = await supabase
                 .from("profiles")
                 .update({
-                    first_name: data.first_name,
-                    last_name: data.last_name,
-                    phone: data.phone, // Zod đã transform null/rỗng
-                    date_of_birth: data.date_of_birth, // Zod đã transform null/rỗng
-                })
+                    first_name: data.first_name, last_name: data.last_name, phone: data.phone,
+                    date_of_birth: data.date_of_birth, gender: data.gender, employment_status: data.employment_status,
+                    university: data.university, major: data.major,
+                    // Không update annual_leave_balance
+                } as any) // Dùng as any để TS cục bộ có thể chưa đồng bộ
                 .eq("id", user.id);
 
             if (error) throw error;
@@ -193,16 +172,12 @@ setProfile(userProfile);
         }
     }, [loadProfile]);
 
-    // --- XỬ LÝ UPLOAD AVATAR ---
+    // --- XỬ LÝ UPLOAD AVATAR/CV (Giữ nguyên) ---
     const handleAvatarUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         try {
             const file = event.target.files?.[0];
             if (!file) return;
-
-            if (file.size > 2 * 1024 * 1024) {
-                toast.error("Kích thước file phải nhỏ hơn 2MB.");
-                return;
-            }
+            if (file.size > 2 * 1024 * 1024) { toast.error("Kích thước file phải nhỏ hơn 2MB."); return; }
 
             setUploading(true);
             const { data: { user } } = await supabase.auth.getUser();
@@ -212,21 +187,12 @@ setProfile(userProfile);
             const fileName = `${Date.now()}.${fileExt}`;
             const filePath = `${user.id}/${fileName}`; 
 
-            const { error: uploadError } = await supabase.storage
-                .from("avatars")
-                .upload(filePath, file, { upsert: true });
-
+            const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
             if (uploadError) throw uploadError;
 
-            const { data: { publicUrl } } = supabase.storage
-                .from("avatars")
-                .getPublicUrl(filePath);
+            const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
-            const { error: updateError } = await supabase
-                .from("profiles")
-                .update({ avatar_url: publicUrl }) 
-                .eq("id", user.id);
-
+            const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
             if (updateError) throw updateError;
 
             toast.success("Ảnh đại diện đã được cập nhật thành công!");
@@ -239,21 +205,12 @@ setProfile(userProfile);
         }
     }, [loadProfile]);
     
-    // --- XỬ LÝ UPLOAD CV CÁ NHÂN ---
     const handleCvUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         try {
             const file = event.target.files?.[0];
             if (!file) return;
-
-            if (file.type !== 'application/pdf') {
-                toast.error("Vui lòng tải lên file định dạng PDF.");
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) { 
-                toast.error("Kích thước file phải nhỏ hơn 5MB.");
-                return;
-            }
+            if (file.type !== 'application/pdf') { toast.error("Vui lòng tải lên file định dạng PDF."); return; }
+            if (file.size > 5 * 1024 * 1024) { toast.error("Kích thước file phải nhỏ hơn 5MB."); return; }
 
             setCvUploading(true);
             const { data: { user } } = await supabase.auth.getUser();
@@ -261,22 +218,12 @@ setProfile(userProfile);
 
             const filePath = `${user.id}/${Date.now()}_cv.pdf`; 
 
-            const { error: uploadError } = await supabase.storage
-                .from("documents") 
-                .upload(filePath, file, { upsert: true });
-
+            const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, file, { upsert: true });
             if (uploadError) throw uploadError;
 
-            const { data: { publicUrl } } = supabase.storage
-                .from("documents")
-                .getPublicUrl(filePath);
+            const { data: { publicUrl } } = supabase.storage.from("documents").getPublicUrl(filePath);
 
-            // SỬA LỖI 2353: Sử dụng 'as any' để Typescript cho phép cập nhật cột mới
-            const { error: updateError } = await supabase
-                .from("profiles")
-                .update({ cv_url: publicUrl } as any) 
-                .eq("id", user.id);
-
+            const { error: updateError } = await supabase.from("profiles").update({ cv_url: publicUrl } as any).eq("id", user.id);
             if (updateError) throw updateError;
 
             toast.success("Hồ sơ (CV) đã được tải lên thành công!");
@@ -316,301 +263,142 @@ setProfile(userProfile);
     return (
         <DashboardLayout>
             <div className="container mx-auto py-8 px-4 max-w-5xl">
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                        Cài đặt Hồ sơ Cá nhân
-                    </h1>
-                    <p className="text-muted-foreground mt-2">Quản lý thông tin cá nhân và tài liệu của bạn.</p>
-                </div>
-
-                <div className="grid gap-6">
-                    {/* --- 1. Thẻ Ảnh Đại diện --- */}
-                    <Card className="shadow-medium transition-smooth hover:shadow-strong">
-                        <CardHeader>
-                            <CardTitle>Ảnh Đại diện</CardTitle>
-                            <CardDescription>Tải lên ảnh để cá nhân hóa tài khoản của bạn.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col sm:flex-row items-center gap-6">
-                            <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-lg">
-                                <AvatarImage src={profile.avatar_url || undefined} />
-                                <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
-                                    {initials || <User className="h-12 w-12" />}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 text-center sm:text-left">
-                                <Label htmlFor="avatar-upload" className="cursor-pointer">
-                                    <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-md transition-smooth">
-                                        {uploading ? (
-                                            <>
-                                                <Loader2 className="h-5 w-5 animate-spin" />
-                                                Đang tải lên...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Upload className="h-5 w-5" />
-                                                Tải Ảnh Mới
-                                            </>
-                                        )}
-                                    </div>
-                                </Label>
-                                <Input
-                                    id="avatar-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleAvatarUpload}
-                                    disabled={uploading}
-                                />
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Chỉ chấp nhận JPG, PNG hoặc GIF. Tối đa 2MB.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* --- 2. Thẻ CV Cá nhân --- */}
-                    <Card className="shadow-medium transition-smooth hover:shadow-strong">
-                        <CardHeader>
-                            <CardTitle>Hồ sơ (CV) Cá nhân</CardTitle>
-                            <CardDescription>Tải lên hoặc xem hồ sơ cá nhân (CV) mới nhất của bạn (Chỉ PDF).</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex items-center gap-6">
-                            <div className="p-4 rounded-xl bg-secondary/70 border border-border flex items-center justify-center shrink-0">
-                                <FileText className="h-10 w-10 text-primary" />
-                            </div>
-                            <div className="flex-1 space-y-3">
+                <Card className="shadow-2xl transition-all duration-500 hover:shadow-primary/30">
+                    <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b rounded-t-xl">
+                        <CardTitle className="text-2xl font-extrabold flex items-center gap-3 text-primary tracking-tight">
+                            <Info className="h-6 w-6" /> CÀI ĐẶT HỒ SƠ CÁ NHÂN
+                        </CardTitle>
+                        <CardDescription>Quản lý thông tin cá nhân và tài liệu của bạn.</CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="p-4 md:p-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            
+                            {/* --- CỘT TRÁI: AVATAR & THÔNG TIN TỔ CHỨC (Cột 1) --- */}
+                            <div className="lg:col-span-1 space-y-8 order-1">
                                 
-                                {/* Trạng thái và nút Xem/Tải lên */}
-                                <div className="flex items-center gap-4">
-                                    {profile.cv_url ? (
-                                        <>
-                                            <Button 
-                                                variant="outline" 
-                                                className="text-primary hover:bg-secondary"
-                                                onClick={async () => {
-                                                    const url = await getCvDownloadUrl(profile.cv_url!);
-                                                    if (url) {
-                                                        window.open(url, '_blank');
-                                                    }
-                                                }}
-                                            >
-                                                <Eye className="h-4 w-4 mr-2" /> Xem CV
-                                            </Button>
-                                            
-                                            <a 
-                                                href={profile.cv_url} 
-                                                onClick={async (e) => {
-                                                    e.preventDefault();
-                                                    const url = await getCvDownloadUrl(profile.cv_url!);
-                                                    if (url) {
-                                                        window.open(url, '_self'); 
-                                                    }
-                                                }}
-                                                download 
-                                            >
-                                                <Button variant="secondary" className="bg-green-600 hover:bg-green-700 text-white">
-                                                    <Download className="h-4 w-4 mr-2" /> Tải xuống
-                                                </Button>
-                                            </a>
-                                        </>
-                                    ) : (
-                                        <p className="text-sm text-warning font-semibold">Chưa có hồ sơ được tải lên.</p>
-                                    )}
-                                    
-                                    {/* Nút Upload */}
-                                    <Label htmlFor="cv-upload" className="cursor-pointer">
-                                        <Button asChild className="h-9 px-4 bg-primary hover:bg-primary/90 shadow-md" disabled={cvUploading}>
-                                            <div>
-                                                {cvUploading ? (
-                                                    <>
-                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                        Đang tải...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Upload className="h-4 w-4 mr-2" /> Tải lên CV (PDF)
-                                                    </>
-                                                )}
+                                {/* Khối 1: Ảnh Đại diện */}
+                                <div className="space-y-4 p-4 border border-border/70 rounded-xl bg-secondary/30">
+                                    <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2 text-primary"><User className="h-4 w-4" /> Ảnh Đại Diện</h3>
+                                    <div className="flex flex-col items-center gap-4">
+                                        <Avatar className="h-32 w-32 ring-4 ring-primary/30 shadow-xl">
+                                            <AvatarImage src={profile.avatar_url || undefined} />
+                                            <AvatarFallback className="text-3xl bg-primary text-primary-foreground">{initials || <User className="h-12 w-12" />}</AvatarFallback>
+                                        </Avatar>
+                                        <Label htmlFor="avatar-upload" className="cursor-pointer">
+                                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-md transition-smooth h-9 text-sm" aria-disabled={uploading}>
+                                                {uploading ? (<><Loader2 className="h-4 w-4 animate-spin" /> Đang tải...</>) : (<><Upload className="h-4 w-4" /> Tải Ảnh Mới</>)}
                                             </div>
-                                        </Button>
-                                    </Label>
-                                    <Input
-                                        id="cv-upload"
-                                        type="file"
-                                        accept=".pdf"
-                                        className="hidden"
-                                        onChange={handleCvUpload}
-                                        disabled={cvUploading}
-                                    />
+                                        </Label>
+                                        <Input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                                    </div>
                                 </div>
                                 
-                                <p className="text-xs text-muted-foreground">
-                                    Chỉ chấp nhận định dạng PDF. Tối đa 5MB. Việc tải lên sẽ ghi đè lên file cũ.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                <Separator />
 
+                                {/* Khối 2: Chi tiết Vận hành */}
+                                <div className="space-y-4 p-4 border border-border/70 rounded-xl bg-secondary/30">
+                                    <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2 text-primary"><Briefcase className="h-4 w-4" /> Chi tiết Vận hành</h3>
+                                    <div className="space-y-3">
+                                        
+                                        {/* Đội nhóm */}
+                                        <div className="space-y-1">
+                                            <Label className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" /> Đội nhóm:</Label>
+                                            <p className="font-semibold text-sm">{team?.name || "Chưa phân công"}</p>
+                                        </div>
 
-                    {/* --- 3. Thẻ Thông tin Cá nhân --- (Sửa từ số 2 cũ) */}
-                    <Card className="shadow-medium transition-smooth hover:shadow-strong">
-                        <CardHeader>
-                            <CardTitle>Thông tin Cá nhân</CardTitle>
-                            <CardDescription>Cập nhật chi tiết hồ sơ của bạn.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                    {/* ... (Các trường Form giữ nguyên) ... */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* First Name */}
-                                        <FormField
-                                            control={form.control}
-                                            name="first_name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Tên</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                            <Input {...field} className="pl-10" placeholder="Ví dụ: Văn" />
-                                                        </div>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Last Name */}
-                                        <FormField
-                                            control={form.control}
-                                            name="last_name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Họ</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                            <Input {...field} className="pl-10" placeholder="Ví dụ: Nguyễn" />
-                                                        </div>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Phone Number */}
-                                        <FormField
-                                            control={form.control}
-                                            name="phone"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Số điện thoại</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                            <Input {...field} type="tel" className="pl-10" placeholder="090-xxx-xxxx" />
-                                                        </div>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Date of Birth */}
-                                        <FormField
-                                            control={form.control}
-                                            name="date_of_birth"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Ngày sinh</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                            <Input {...field} type="date" className="pl-10" />
-                                                        </div>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Email (Disabled) */}
-                                        <div className="space-y-2 col-span-1 md:col-span-2">
-                                            <Label>Địa chỉ Email</Label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                <Input value={profile.email} disabled className="pl-10 bg-secondary/50 font-semibold" />
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">Email là thông tin cố định và không thể thay đổi.</p>
+                                        {/* Ca làm việc */}
+                                        <div className="space-y-1">
+                                            <Label className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" /> Ca làm việc:</Label>
+                                            <p className="font-semibold text-sm">{shift ? `${shift.name} (${shift.start_time} - ${shift.end_time})` : "Chưa phân công"}</p>
                                         </div>
                                     </div>
-
-                                    <Button type="submit" disabled={loading} className="w-full sm:w-auto h-10 px-8 bg-primary hover:bg-primary/90 shadow-md transition-smooth">
-                                        {loading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Đang lưu...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="mr-2 h-4 w-4" />
-                                                Lưu Thay đổi
-                                            </>
-                                        )}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
-                    
-                    {/* --- 4. Thẻ Thông tin Tổ chức --- (Sửa từ số 3 cũ) */}
-                    <Card className="shadow-medium transition-smooth hover:shadow-strong">
-                        <CardHeader>
-                            <CardTitle>Thông tin Tổ chức</CardTitle>
-                            <CardDescription>Chi tiết về đội nhóm, ca làm việc và quyền lợi của bạn.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Team Info */}
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-2">
-                                        <Users className="h-4 w-4 text-primary" />
-                                        Đội nhóm
-                                    </Label>
-                                    <div className="px-4 py-3 bg-secondary/50 rounded-lg border border-border font-medium text-sm">
-                                        {team?.name || "Chưa được phân công"}
-                                    </div>
-                                </div>
-
-                                {/* Shift Info */}
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-primary" />
-                                        Ca làm việc
-                                    </Label>
-                                    <div className="px-4 py-3 bg-secondary/50 rounded-lg border border-border font-medium text-sm">
-                                        {shift ? `${shift.name} (${shift.start_time} - ${shift.end_time})` : "Chưa được phân công"}
-                                    </div>
-                                </div>
-
-                                {/* Annual Leave Balance */}
-                                <div className="space-y-2 col-span-1 md:col-span-2">
-                                    <Label className="flex items-center gap-2">
-                                        <Briefcase className="h-4 w-4 text-primary" />
-                                        Số ngày nghỉ phép thường niên
-                                    </Label>
-                                    <div className="px-5 py-4 bg-gradient-to-r from-primary to-primary-glow rounded-lg shadow-lg">
-                                        <p className="text-3xl font-extrabold text-primary-foreground">
-                                            {profile.annual_leave_balance} ngày
-                                        </p>
-                                        <p className="text-xs text-primary-foreground/80 mt-1">còn lại trong năm</p>
-                                    </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                            
+                            {/* --- CỘT GIỮA & PHẢI: FORM CHỈNH SỬA VÀ CV (Cột 2 & 3) --- */}
+                            <div className="lg:col-span-2 space-y-8 order-2">
+                                
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                        
+                                        {/* NHÓM 1: THÔNG TIN CƠ BẢN & CÁ NHÂN (1-7) */}
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2 text-primary"><User className="h-4 w-4" /> Thông tin Cá nhân</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* 1. Họ */}
+                                                <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>1. Họ</FormLabel><FormControl><Input {...field} placeholder="Ví dụ: Võ" /></FormControl><FormMessage /></FormItem>)} />
+                                                {/* 2. Tên */}
+                                                <FormField control={form.control} name="first_name" render={({ field }) => (<FormItem><FormLabel>2. Tên</FormLabel><FormControl><Input {...field} placeholder="Ví dụ: Chí Nhân" /></FormControl><FormMessage /></FormItem>)} />
+                                                
+                                                {/* 3. Giới tính */}
+                                                <FormField control={form.control} name="gender" render={({ field }) => (
+                                                    <FormItem><FormLabel>3. Giới tính</FormLabel><Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Chọn giới tính" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Nam">Nam</SelectItem><SelectItem value="Nữ">Nữ</SelectItem><SelectItem value="Khác">Khác</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                                )} />
+                                                
+                                                {/* 4. Ngày sinh */}
+                                                <FormField control={form.control} name="date_of_birth" render={({ field }) => (<FormItem><FormLabel>4. Ngày sinh</FormLabel><FormControl><Input {...field} type="date" /></FormControl><FormMessage /></FormItem>)} />
+                                                
+                                                {/* 5. Số điện thoại */}
+                                                <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>5. Số điện thoại</FormLabel><FormControl><Input {...field} type="tel" placeholder="090-xxx-xxxx" /></FormControl><FormMessage /></FormItem>)} />
+                                                
+                                                {/* 7. Nghề nghiệp */}
+                                                <FormField control={form.control} name="employment_status" render={({ field }) => (
+                                                    <FormItem><FormLabel>7. Nghề nghiệp</FormLabel><Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Employed">Đã đi làm</SelectItem><SelectItem value="Student">Sinh viên</SelectItem><SelectItem value="Trainee">Thực tập/Học sinh</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                                )} />
+                                                
+                                                {/* 6. Email (Thông tin cố định) */}
+                                                <div className="space-y-2 sm:col-span-2">
+                                                    <Label>6. Địa chỉ Email (Không đổi)</Label>
+                                                    <Input value={profile.email} disabled className="bg-secondary/50 font-semibold" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* NHÓM 2: THÔNG TIN HỌC VẤN (8-9) */}
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2 text-primary"><GraduationCap className="h-4 w-4" /> Học vấn</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* 8. Trường Đại học */}
+                                                <FormField control={form.control} name="university" render={({ field }) => (<FormItem><FormLabel>8. Trường Đại học/Cao đẳng</FormLabel><FormControl><Input {...field} placeholder="Ví dụ: ĐH Quốc gia" /></FormControl><FormMessage /></FormItem>)} />
+                                                {/* 9. Chuyên ngành */}
+                                                <FormField control={form.control} name="major" render={({ field }) => (<FormItem><FormLabel>9. Chuyên ngành</FormLabel><FormControl><Input {...field} placeholder="Ví dụ: CNTT" /></FormControl><FormMessage /></FormItem>)} />
+                                            </div>
+                                        </div>
+
+                                        {/* Khối 3: Quản lý CV (Luôn nằm dưới cùng trên cột 2/3) */}
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2 text-primary"><FileText className="h-4 w-4" /> Quản lý Hồ sơ (CV)</h3>
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                
+                                                {profile.cv_url ? (
+                                                    <>
+                                                        <Button variant="secondary" className="bg-primary hover:bg-primary/90 text-white h-9 px-4" onClick={async () => { const url = await getCvDownloadUrl(profile.cv_url!); if (url) { window.open(url, '_blank'); } }}><Eye className="h-4 w-4 mr-2" /> Xem CV</Button>
+                                                        <Button variant="secondary" className="bg-green-600 hover:bg-green-700 text-white h-9 px-4" onClick={async () => { const url = await getCvDownloadUrl(profile.cv_url!); if (url) { window.open(url, '_self'); } }}><Download className="h-4 w-4 mr-2" /> Tải xuống</Button>
+                                                    </>
+                                                ) : (<p className="text-sm text-red-500 font-semibold">Chưa có hồ sơ được tải lên.</p>)}
+                                                
+                                                <Label htmlFor="cv-upload" className="cursor-pointer">
+                                                    <Button asChild className="h-9 px-4 shadow-md" disabled={cvUploading} variant={profile.cv_url ? "default" : "destructive"}>
+                                                        <div>{cvUploading ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Đang tải...</>) : (<><Upload className="h-4 w-4 mr-2" /> {profile.cv_url ? "Cập nhật CV mới" : "Tải lên CV (PDF)"}</>)}</div>
+                                                    </Button>
+                                                </Label>
+                                                <Input id="cv-upload" type="file" accept=".pdf" className="hidden" onChange={handleCvUpload} disabled={cvUploading} />
+                                            </div>
+                                        </div>
+
+                                        {/* Nút Lưu thay đổi (Luôn ở cuối Form) */}
+                                        <div className="flex justify-end pt-4 border-t border-border mt-8">
+                                            <Button type="submit" disabled={loading} className="w-full sm:w-auto h-10 px-8">
+                                                {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang lưu...</>) : (<><Save className="mr-2 h-4 w-4" /> Lưu Thay đổi</>)}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </Form>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </DashboardLayout>
     );

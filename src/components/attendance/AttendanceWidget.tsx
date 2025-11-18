@@ -277,7 +277,7 @@ const AttendanceWidget = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Today's Attendance
+            Lịch chấm công 
           </CardTitle>
           <CardDescription>{format(new Date(), 'EEEE, MMMM dd, yyyy')}</CardDescription>
         </CardHeader>
@@ -342,44 +342,44 @@ const AttendanceWidget = () => {
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Hours</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tổng giờ làm</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalHours}h</div>
-            <p className="text-xs text-muted-foreground mt-1">This month</p>
+            <p className="text-xs text-muted-foreground mt-1">Tháng Này</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Work Days</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tổng số ngày làm</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDays}</div>
-            <p className="text-xs text-muted-foreground mt-1">This month</p>
+            <p className="text-xs text-muted-foreground mt-1">Của tháng</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Hours/Day</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Số giờ làm trung bình/1 ngày</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.averageHoursPerDay.toFixed(1)}h</div>
             <p className="text-xs text-success mt-1">
               <TrendingUp className="inline h-3 w-3 mr-1" />
-              On track
+              Theo dõi tốt
             </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">On-time Rate</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tỉ lệ đúng giờ</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.onTimeRate}%</div>
-            <p className="text-xs text-success mt-1">Excellent</p>
+            <p className="text-xs text-success mt-1">Xuất sắc</p>
           </CardContent>
         </Card>
       </div>
@@ -387,16 +387,15 @@ const AttendanceWidget = () => {
       {/* History */}
       <Card className="shadow-medium">
         <CardHeader>
-          <CardTitle>Attendance History</CardTitle>
-          <CardDescription>Your recent check-in and check-out records</CardDescription>
+          <CardTitle>Lịch sử chấm công</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="week">This Week</TabsTrigger>
-              <TabsTrigger value="month">This Month</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="all">Tất Cả</TabsTrigger>
+              <TabsTrigger value="week">Tuần Này</TabsTrigger>
+              <TabsTrigger value="month">Tháng Này</TabsTrigger>
+              <TabsTrigger value="calendar">Lịch</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="space-y-2 mt-4">
@@ -534,7 +533,7 @@ const AttendanceWidget = () => {
                       </div>
                     ))}
                   {allRecords.filter(r => r.timestamp.split('T')[0] === format(selectedDate, 'yyyy-MM-dd')).length === 0 && (
-                    <p className="text-center text-muted-foreground py-4">No records for this date</p>
+                    <p className="text-center text-muted-foreground py-4">Không có lưu trữ gì cả</p>
                   )}
                 </div>
               )}

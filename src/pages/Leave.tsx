@@ -31,40 +31,61 @@ const Leave = () => {
   return (
     <DashboardLayout role={role}>
       <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+
+        {/* Header + Leave Balance */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Leave Management
+              Quản Lý Nghỉ Phép
             </h2>
-            <p className="text-muted-foreground mt-2">Request and manage your leave</p>
+            <p className="text-muted-foreground mt-2">
+              Gửi yêu cầu nghỉ phép và theo dõi lịch sử nghỉ của bạn
+            </p>
           </div>
 
           <Card className="w-full md:w-64 shadow-strong overflow-hidden bg-gradient-primary">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2 text-primary-foreground">
                 <Calendar className="h-4 w-4" />
-                Leave Balance
+                Số Ngày Nghỉ Còn Lại
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary-foreground">{leaveBalance} days</div>
-              <p className="text-xs text-primary-foreground/80 mt-1">Available to use</p>
+              <div className="text-3xl font-bold text-primary-foreground">{leaveBalance} ngày</div>
+              <p className="text-xs text-primary-foreground/80 mt-1">Có thể sử dụng</p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Tabs */}
         <Tabs defaultValue="request" className="w-full">
           <TabsList className="bg-secondary shadow-soft">
-            <TabsTrigger value="request" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">New Request</TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">History</TabsTrigger>
+
+            <TabsTrigger
+              value="request"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Yêu Cầu Nghỉ Mới
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="history"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Lịch Sử Nghỉ
+            </TabsTrigger>
+
           </TabsList>
+
           <TabsContent value="request" className="mt-6">
             <LeaveRequestForm />
           </TabsContent>
+
           <TabsContent value="history" className="mt-6">
             <LeaveHistory role={role} />
           </TabsContent>
         </Tabs>
+
       </div>
     </DashboardLayout>
   );

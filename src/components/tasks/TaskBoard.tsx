@@ -26,10 +26,10 @@ interface Task {
 }
 
 const statuses = [
-  { value: 'todo', label: 'To Do' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'review', label: 'Review' },
-  { value: 'done', label: 'Done' }
+  { value: 'todo', label: 'Chưa bắt đầu' },
+  { value: 'in_progress', label: 'Đang làm' },
+  { value: 'review', label: 'Chờ Duyệt' },
+  { value: 'done', label: 'Đã Hoàn Thành' }
 ] as const;
 
 const TaskBoard = ({ role }: { role: UserRole }) => {

@@ -145,10 +145,10 @@ const EditTaskDialog = ({ task, open, onOpenChange, onTaskUpdated }: EditTaskDia
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
+                  <SelectItem value="todo">Chuẩn bị</SelectItem>
+                  <SelectItem value="in_progress">Đang làm</SelectItem>
+                  <SelectItem value="review">Chờ Duyệt</SelectItem>
+                  <SelectItem value="done">Đã Hoàn Thành</SelectItem>
                 </SelectContent>
               </Select>
             </div>

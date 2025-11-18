@@ -10,7 +10,7 @@ import { signIn, signUp, getCurrentUser } from "@/lib/auth";
 import { Loader2 } from "lucide-react"; 
 
 // --- Custom Constants ---
-const APP_NAME = "LifeOS HRM AI";
+const APP_NAME = "MSC Center - HRM AI";
 const LOGO_PATH = "/LOGO.PNG"; // Đường dẫn đến logo tổ chức
 
 const Login = () => {
@@ -121,7 +121,7 @@ const Login = () => {
                             {APP_NAME}
                         </h1>
                     </div>
-                    <p className="text-md text-muted-foreground">Nền tảng Quản trị Nhân sự và Vận hành</p>
+                   
                 </div>
 
                 {/* --- LOGIN/SIGNUP CARD --- */}
@@ -141,18 +141,16 @@ const Login = () => {
                         <TabsContent value="login">
                             <form onSubmit={handleLogin}>
                                 <CardContent className="space-y-6 pt-6">
-                                    <CardTitle className="text-2xl">Chào mừng trở lại</CardTitle>
-                                    <CardDescription>
-                                        Nhập thông tin xác thực để truy cập hệ thống quản lý
-                                    </CardDescription>
+                                    <CardTitle className="text-2xl text-center">Chúc một ngày làm việc năng suất</CardTitle>
+                                
                                     
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="login-email">Email Công ty</Label>
+                                            <Label htmlFor="login-email">Tài khoản</Label>
                                             <Input
                                                 id="login-email"
                                                 type="email"
-                                                placeholder="tenban@congty.com"
+                                                placeholder=""
                                                 value={loginEmail}
                                                 onChange={(e) => setLoginEmail(e.target.value)}
                                                 required
@@ -165,7 +163,7 @@ const Login = () => {
                                             <Input
                                                 id="login-password"
                                                 type="password"
-                                                placeholder="••••••••"
+                                                placeholder=""
                                                 value={loginPassword}
                                                 onChange={(e) => setLoginPassword(e.target.value)}
                                                 required
@@ -198,19 +196,15 @@ const Login = () => {
                         <TabsContent value="signup">
                             <form onSubmit={handleSignup}>
                                 <CardContent className="space-y-6 pt-6">
-                                    <CardTitle className="text-2xl">Tạo Tài khoản</CardTitle>
-                                    <CardDescription>
-                                        Đăng ký để bắt đầu sử dụng {APP_NAME}. Tài khoản sẽ chờ phê duyệt.
-                                    </CardDescription>
                                     
                                     <div className="grid grid-cols-2 gap-4">
                                         {/* First Name */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="signup-firstname">Tên</Label>
+                                            <Label htmlFor="signup-firstname">Họ</Label>
                                             <Input
                                                 id="signup-firstname"
                                                 type="text"
-                                                placeholder="Văn"
+                                                placeholder=""
                                                 value={signupFirstName}
                                                 onChange={(e) => setSignupFirstName(e.target.value)}
                                                 required
@@ -219,11 +213,11 @@ const Login = () => {
                                         </div>
                                         {/* Last Name */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="signup-lastname">Họ</Label>
+                                            <Label htmlFor="signup-lastname">Tên</Label>
                                             <Input
                                                 id="signup-lastname"
                                                 type="text"
-                                                placeholder="Nguyễn"
+                                                placeholder=""
                                                 value={signupLastName}
                                                 onChange={(e) => setSignupLastName(e.target.value)}
                                                 required
@@ -231,13 +225,24 @@ const Login = () => {
                                             />
                                         </div>
                                     </div>
-                                    
                                     <div className="space-y-2">
-                                        <Label htmlFor="signup-email">Email Công ty</Label>
+                                        <Label htmlFor="signup-email">Số điện thoại</Label>
+                                        <Input
+                                            id="numberID"
+                                            type="number"
+                                            placeholder=""
+                                            value={signupEmail}
+                                            onChange={(e) => setSignupEmail(e.target.value)}
+                                            required
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="signup-email">Email</Label>
                                         <Input
                                             id="signup-email"
                                             type="email"
-                                            placeholder="tenban@congty.com"
+                                            placeholder=""
                                             value={signupEmail}
                                             onChange={(e) => setSignupEmail(e.target.value)}
                                             required
@@ -250,7 +255,7 @@ const Login = () => {
                                         <Input
                                             id="signup-password"
                                             type="password"
-                                            placeholder="••••••••"
+                                            placeholder=""
                                             value={signupPassword}
                                             onChange={(e) => setSignupPassword(e.target.value)}
                                             required
@@ -269,7 +274,7 @@ const Login = () => {
                                                 Đang gửi yêu cầu...
                                             </>
                                         ) : (
-                                            "Tạo Tài khoản"
+                                            "Đăng Ký"
                                         )}
                                     </Button>
                                 </CardFooter>
