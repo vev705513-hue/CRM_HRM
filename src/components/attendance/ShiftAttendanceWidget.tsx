@@ -146,13 +146,13 @@ const ShiftAttendanceWidget = () => {
     if (!userId) return;
 
     const channel = supabase
-      .channel('shift-attendance-changes')
+      .channel('attendance-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'shift_attendance',
+          table: 'attendance',
           filter: `user_id=eq.${userId}`
         },
         () => {
