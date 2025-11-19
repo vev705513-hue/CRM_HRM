@@ -2,12 +2,12 @@ import React, { ReactNode, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { 
+import {
     LayoutDashboard, Users, CheckSquare, Calendar, LogOut, User,
-    Moon, Sun, Clock, Settings, Menu, ListChecks, FileText, Briefcase
+    Moon, Sun, Clock, Settings, Menu, X, ListChecks, FileText, Briefcase
 } from "lucide-react";
 // Giả định các hàm này trả về các kiểu đã định nghĩa
 import { getCurrentUser, getUserProfile, signOut, UserRole, getUserRole } from "@/lib/auth";
@@ -21,7 +21,7 @@ interface UserProfile { first_name: string; last_name: string; avatar_url: strin
 
 // --- Cấu trúc Menu Điều hướng ---
 interface NavItem {
-    icon: React.ElementType; 
+    icon: React.ElementType;
     label: string;
     path: string;
 }
@@ -38,6 +38,7 @@ const DashboardLayout = ({ children, role = 'staff' }: DashboardLayoutProps) => 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [userRole, setUserRole] = useState<UserRole>(role);
     const [isDark, setIsDark] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // --- LOGIC MENU ITEMS ---
     const baseMenuItems: NavItem[] = [
