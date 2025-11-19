@@ -366,23 +366,23 @@ const ShiftAttendanceWidget = () => {
       </div>
 
       {/* Statistics */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-4">
         <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tổng ca làm</CardTitle>
+          <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Tổng ca làm</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-heading">{stats.totalShifts}</div>
+          <CardContent className="p-3 md:p-4 pt-0 md:pt-0">
+            <div className="text-xl md:text-2xl font-bold font-heading">{stats.totalShifts}</div>
             <p className="text-xs text-muted-foreground mt-1">Tháng này</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Hoàn thành</CardTitle>
+          <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Hoàn thành</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-heading text-green-600">{stats.completedShifts}</div>
+          <CardContent className="p-3 md:p-4 pt-0 md:pt-0">
+            <div className="text-xl md:text-2xl font-bold font-heading text-green-600">{stats.completedShifts}</div>
             <p className="text-xs text-success mt-1">
               <TrendingUp className="inline h-3 w-3 mr-1" />
               Tốt
@@ -391,21 +391,21 @@ const ShiftAttendanceWidget = () => {
         </Card>
 
         <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Chờ xử lý</CardTitle>
+          <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Chờ xử lý</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-heading text-blue-600">{stats.pendingShifts}</div>
+          <CardContent className="p-3 md:p-4 pt-0 md:pt-0">
+            <div className="text-xl md:text-2xl font-bold font-heading text-blue-600">{stats.pendingShifts}</div>
             <p className="text-xs text-muted-foreground mt-1">Đang làm</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Vắng mặt</CardTitle>
+          <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Vắng mặt</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-heading text-red-600">{stats.absentShifts}</div>
+          <CardContent className="p-3 md:p-4 pt-0 md:pt-0">
+            <div className="text-xl md:text-2xl font-bold font-heading text-red-600">{stats.absentShifts}</div>
             <p className="text-xs text-destructive mt-1">Cần chú ý</p>
           </CardContent>
         </Card>
