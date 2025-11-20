@@ -17,7 +17,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 // --- Định nghĩa kiểu dữ liệu ---
 
 interface CurrentUser { id: string; email?: string | null; }
-interface UserProfile { first_name: string; last_name: string; avatar_url: string | null; }
+interface UserProfile { full_name: string; avatar_url: string | null; }
 
 // --- Cấu trúc Menu Điều hướng ---
 interface NavItem {
