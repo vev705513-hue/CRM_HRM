@@ -25,6 +25,8 @@ interface TaskGanttChartProps {
 
 const TaskGanttChart = ({ tasks, onTaskReschedule }: TaskGanttChartProps) => {
   const [startViewDate, setStartViewDate] = useState(new Date());
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   const chartDays = 30;
 
   const getStatusColor = (status: string) => {
@@ -55,6 +57,38 @@ const TaskGanttChart = ({ tasks, onTaskReschedule }: TaskGanttChartProps) => {
       left: Math.max(0, Math.min(daysFromStart, chartDays - 1)),
       width: Math.min(chartDays - Math.max(0, daysFromStart), duration),
     };
+  };
+
+  const handleTaskDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
+    setDraggedTaskId(task.id);
+    const rect = (e.currentTarget).getBoundingClientRect();
+    setDragOffset(e.clientX - rect.left);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleTaskDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOffset(0);
+  };
+
+  const handleDayDrop = (e: React.DragEvent<HTMLDivElement>, dayIndex: number) => {
+    e.preventDefault();
+
+    if (!draggedTaskId) return;
+
+    const task = tasks.find(t => t.id === draggedTaskId);
+    if (!task) return;
+
+    const newDate = addDays(startViewDate, dayIndex);
+    const currentStart = task.start_date ? parseISO(task.start_date) : new Date();
+    const currentEnd = task.deadline ? parseISO(task.deadline) : currentStart;
+    const duration = differenceInDays(currentEnd, currentStart);
+
+    const newStartDate = format(newDate, 'yyyy-MM-dd');
+    const newEndDate = format(addDays(newDate, duration), 'yyyy-MM-dd');
+
+    onTaskReschedule(draggedTaskId, newStartDate, newEndDate);
+    handleTaskDragEnd();
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
