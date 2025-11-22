@@ -323,25 +323,6 @@ const ShiftAttendanceWidget = () => {
     }
   };
 
-  const getShiftStatus = (record: ShiftRecord | undefined): { status: string; color: string; icon: React.ComponentType<any> } => {
-    if (!record) {
-      return { status: 'Chưa chấm', color: 'bg-gray-100 text-gray-700', icon: Clock };
-    }
-    
-    if (record.status === 'completed') {
-      return { status: 'Hoàn thành', color: 'bg-green-100 text-green-700', icon: CheckCircle2 };
-    }
-    
-    if (record.status === 'checked_in') {
-      return { status: 'Đang làm', color: 'bg-blue-100 text-blue-700', icon: Clock };
-    }
-    
-    if (record.status === 'absent') {
-      return { status: 'Vắng mặt', color: 'bg-red-100 text-red-700', icon: XCircle };
-    }
-
-    return { status: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-700', icon: Clock };
-  };
 
   const renderShiftCard = (shiftType: ShiftType) => {
     const shiftInfo = SHIFT_TIMES[shiftType];
