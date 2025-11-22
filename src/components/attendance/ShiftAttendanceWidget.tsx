@@ -345,11 +345,9 @@ const ShiftAttendanceWidget = () => {
 
   const renderShiftCard = (shiftType: ShiftType) => {
     const shiftInfo = SHIFT_TIMES[shiftType];
-    const shiftRecords = todayRecords.filter(r => r.shift_type === shiftType);
-    const hasCheckIn = shiftRecords.some(r => r.type === 'check_in');
-    const hasCheckOut = shiftRecords.some(r => r.type === 'check_out');
-    const checkInRecord = shiftRecords.find(r => r.type === 'check_in');
-    const checkOutRecord = shiftRecords.find(r => r.type === 'check_out');
+    const shiftRecord = todayRecords.find(r => r.shift_type === shiftType);
+    const hasCheckIn = !!shiftRecord?.check_in;
+    const hasCheckOut = !!shiftRecord?.check_out;
 
     let statusText = 'Chưa chấm';
     let color = 'bg-gray-100 text-gray-700';
@@ -381,14 +379,14 @@ const ShiftAttendanceWidget = () => {
 
           {(hasCheckIn || hasCheckOut) && (
             <div className="text-xs md:text-sm space-y-1 bg-muted/50 rounded p-2">
-              {checkInRecord && (
+              {shiftRecord?.check_in && (
                 <p className="text-foreground">
-                  <span className="font-medium">Vào:</span> {format(new Date(checkInRecord.timestamp), 'HH:mm')}
+                  <span className="font-medium">Vào:</span> {format(new Date(shiftRecord.check_in), 'HH:mm')}
                 </p>
               )}
-              {checkOutRecord && (
+              {shiftRecord?.check_out && (
                 <p className="text-foreground">
-                  <span className="font-medium">Ra:</span> {format(new Date(checkOutRecord.timestamp), 'HH:mm')}
+                  <span className="font-medium">Ra:</span> {format(new Date(shiftRecord.check_out), 'HH:mm')}
                 </p>
               )}
             </div>
