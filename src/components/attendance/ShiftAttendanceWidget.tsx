@@ -14,14 +14,15 @@ type ShiftType = 'morning' | 'afternoon' | 'overtime';
 interface ShiftRecord {
   id: string;
   user_id: string;
-  type: 'check_in' | 'check_out';
-  timestamp: string;
   shift_type: ShiftType;
-  status?: 'pending' | 'checked_in' | 'completed' | 'absent';
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  status: 'pending' | 'checked_in' | 'completed' | 'absent';
   location: string | null;
   notes: string | null;
-  is_leave?: boolean;
-  leave_type?: 'annual' | 'sick' | 'unpaid' | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ShiftStats {
@@ -56,16 +57,15 @@ const ShiftAttendanceWidget = () => {
     const monthEnd = endOfMonth(new Date());
 
     const monthRecords = records.filter(r => {
-      const recordDate = new Date(r.timestamp);
+      const recordDate = new Date(r.date);
       return recordDate >= monthStart && recordDate <= monthEnd;
     });
 
-    // Count by shift type per day
+    // Group by day (all shifts per day count as one work day)
     const shiftsByDay: { [key: string]: ShiftRecord[] } = {};
     monthRecords.forEach(r => {
-      const dateStr = new Date(r.timestamp).toISOString().split('T')[0];
-      if (!shiftsByDay[dateStr]) shiftsByDay[dateStr] = [];
-      shiftsByDay[dateStr].push(r);
+      if (!shiftsByDay[r.date]) shiftsByDay[r.date] = [];
+      shiftsByDay[r.date].push(r);
     });
 
     let completedShifts = 0;
@@ -73,14 +73,16 @@ const ShiftAttendanceWidget = () => {
     let absentShifts = 0;
 
     Object.values(shiftsByDay).forEach(dayRecords => {
-      const hasCheckIn = dayRecords.some(r => r.type === 'check_in');
-      const hasCheckOut = dayRecords.some(r => r.type === 'check_out');
+      // Check if all shifts for the day are completed
+      const allCompleted = dayRecords.every(r => r.status === 'completed');
+      const allAbsent = dayRecords.every(r => r.status === 'absent');
+      const anyCheckedIn = dayRecords.some(r => r.status === 'checked_in');
 
-      if (dayRecords.some(r => r.is_leave)) {
+      if (allAbsent) {
         absentShifts++;
-      } else if (hasCheckIn && hasCheckOut) {
+      } else if (allCompleted) {
         completedShifts++;
-      } else if (hasCheckIn) {
+      } else if (anyCheckedIn || dayRecords.some(r => r.status === 'pending')) {
         pendingShifts++;
       } else {
         absentShifts++;
@@ -98,17 +100,27 @@ const ShiftAttendanceWidget = () => {
   const loadAllAttendance = useCallback(async (uid: string) => {
     try {
       const { data, error } = await supabase
-        .from('attendance')
+        .from('shift_attendance')
         .select('*')
         .eq('user_id', uid)
-        .order('timestamp', { ascending: false })
+        .order('date', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        const errorMsg = error && typeof error === 'object' ? (error as any).message : String(error);
+        console.error('Attendance query error:', errorMsg);
+        throw new Error(errorMsg || 'Failed to load attendance');
+      }
       setAllRecords(data || []);
       calculateStats(data || []);
     } catch (error) {
-      console.error('Error loading attendance:', error);
+      let errorMessage = 'Không thể tải lịch sử chấm công';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      console.error('Error loading all attendance:', errorMessage);
     }
   }, [calculateStats]);
 
@@ -116,17 +128,26 @@ const ShiftAttendanceWidget = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
-        .from('attendance')
+        .from('shift_attendance')
         .select('*')
         .eq('user_id', uid)
-        .gte('timestamp', `${today}T00:00:00`)
-        .lte('timestamp', `${today}T23:59:59`)
+        .eq('date', today)
         .order('shift_type');
 
-      if (error) throw error;
+      if (error) {
+        const errorMsg = error && typeof error === 'object' ? (error as any).message : String(error);
+        console.error('Today attendance query error:', errorMsg);
+        throw new Error(errorMsg || 'Failed to load today attendance');
+      }
       setTodayRecords(data || []);
     } catch (error) {
-      console.error('Error loading today attendance:', error);
+      let errorMessage = 'Không thể tải chấm công hôm nay';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      console.error('Error loading today attendance:', errorMessage);
     }
   }, []);
 
@@ -146,13 +167,13 @@ const ShiftAttendanceWidget = () => {
     if (!userId) return;
 
     const channel = supabase
-      .channel('attendance-changes')
+      .channel('shift_attendance-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'attendance',
+          table: 'shift_attendance',
           filter: `user_id=eq.${userId}`
         },
         () => {
@@ -190,20 +211,48 @@ const ShiftAttendanceWidget = () => {
     setIsLoading(true);
     try {
       const location = await getLocation();
-      const timestamp = new Date().toISOString();
+      const today = new Date().toISOString().split('T')[0];
+      const checkInTime = new Date().toISOString();
 
-      const { error } = await supabase
-        .from('attendance')
-        .insert({
-          user_id: userId,
-          type: 'check_in',
-          timestamp,
-          shift_type: shiftType,
-          location,
-          is_leave: false
-        });
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('shift_attendance')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .eq('shift_type', shiftType)
+        .single();
 
-      if (error) throw error;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw new Error(fetchError.message);
+      }
+
+      if (existingRecord) {
+        // Update existing record with check_in
+        const { error: updateError } = await supabase
+          .from('shift_attendance')
+          .update({
+            check_in: checkInTime,
+            location,
+            status: 'checked_in'
+          })
+          .eq('id', existingRecord.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Create new record
+        const { error: insertError } = await supabase
+          .from('shift_attendance')
+          .insert({
+            user_id: userId,
+            shift_type: shiftType,
+            date: today,
+            check_in: checkInTime,
+            location,
+            status: 'checked_in'
+          });
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Chấm công thành công",
@@ -228,20 +277,34 @@ const ShiftAttendanceWidget = () => {
     setIsLoading(true);
     try {
       const location = await getLocation();
-      const timestamp = new Date().toISOString();
+      const today = new Date().toISOString().split('T')[0];
+      const checkOutTime = new Date().toISOString();
 
-      const { error } = await supabase
-        .from('attendance')
-        .insert({
-          user_id: userId,
-          type: 'check_out',
-          timestamp,
-          shift_type: shiftType,
-          location,
-          is_leave: false
-        });
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from('shift_attendance')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .eq('shift_type', shiftType)
+        .single();
 
-      if (error) throw error;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw new Error(fetchError.message);
+      }
+
+      if (existingRecord) {
+        // Update existing record with check_out
+        const { error: updateError } = await supabase
+          .from('shift_attendance')
+          .update({
+            check_out: checkOutTime,
+            location,
+            status: 'completed'
+          })
+          .eq('id', existingRecord.id);
+
+        if (updateError) throw updateError;
+      }
 
       toast({
         title: "Chấm công thành công",
@@ -260,33 +323,12 @@ const ShiftAttendanceWidget = () => {
     }
   };
 
-  const getShiftStatus = (record: ShiftRecord | undefined): { status: string; color: string; icon: React.ComponentType<any> } => {
-    if (!record) {
-      return { status: 'Chưa chấm', color: 'bg-gray-100 text-gray-700', icon: Clock };
-    }
-    
-    if (record.status === 'completed') {
-      return { status: 'Hoàn thành', color: 'bg-green-100 text-green-700', icon: CheckCircle2 };
-    }
-    
-    if (record.status === 'checked_in') {
-      return { status: 'Đang làm', color: 'bg-blue-100 text-blue-700', icon: Clock };
-    }
-    
-    if (record.status === 'absent') {
-      return { status: 'Vắng mặt', color: 'bg-red-100 text-red-700', icon: XCircle };
-    }
-
-    return { status: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-700', icon: Clock };
-  };
 
   const renderShiftCard = (shiftType: ShiftType) => {
     const shiftInfo = SHIFT_TIMES[shiftType];
-    const shiftRecords = todayRecords.filter(r => r.shift_type === shiftType);
-    const hasCheckIn = shiftRecords.some(r => r.type === 'check_in');
-    const hasCheckOut = shiftRecords.some(r => r.type === 'check_out');
-    const checkInRecord = shiftRecords.find(r => r.type === 'check_in');
-    const checkOutRecord = shiftRecords.find(r => r.type === 'check_out');
+    const shiftRecord = todayRecords.find(r => r.shift_type === shiftType);
+    const hasCheckIn = !!shiftRecord?.check_in;
+    const hasCheckOut = !!shiftRecord?.check_out;
 
     let statusText = 'Chưa chấm';
     let color = 'bg-gray-100 text-gray-700';
@@ -318,14 +360,14 @@ const ShiftAttendanceWidget = () => {
 
           {(hasCheckIn || hasCheckOut) && (
             <div className="text-xs md:text-sm space-y-1 bg-muted/50 rounded p-2">
-              {checkInRecord && (
+              {shiftRecord?.check_in && (
                 <p className="text-foreground">
-                  <span className="font-medium">Vào:</span> {format(new Date(checkInRecord.timestamp), 'HH:mm')}
+                  <span className="font-medium">Vào:</span> {format(new Date(shiftRecord.check_in), 'HH:mm')}
                 </p>
               )}
-              {checkOutRecord && (
+              {shiftRecord?.check_out && (
                 <p className="text-foreground">
-                  <span className="font-medium">Ra:</span> {format(new Date(checkOutRecord.timestamp), 'HH:mm')}
+                  <span className="font-medium">Ra:</span> {format(new Date(shiftRecord.check_out), 'HH:mm')}
                 </p>
               )}
             </div>
@@ -358,12 +400,11 @@ const ShiftAttendanceWidget = () => {
   };
 
   const filteredRecords = allRecords.filter(record => {
-    const recordDate = new Date(record.timestamp);
+    const recordDate = new Date(record.date);
     const today = new Date().toISOString().split('T')[0];
-    const recordDay = recordDate.toISOString().split('T')[0];
 
     if (activeTab === 'today') {
-      return recordDay === today;
+      return record.date === today;
     } else if (activeTab === 'week') {
       return recordDate >= startOfWeek(new Date()) && recordDate <= endOfWeek(new Date());
     } else {
@@ -449,8 +490,17 @@ const ShiftAttendanceWidget = () => {
               ) : (
                 filteredRecords.map((record) => {
                   const shiftInfo = SHIFT_TIMES[record.shift_type];
-                  const { status: statusText, color } = getShiftStatus(record);
-                  
+                  const statusColor =
+                    record.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    record.status === 'checked_in' ? 'bg-blue-100 text-blue-700' :
+                    record.status === 'absent' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700';
+                  const statusText =
+                    record.status === 'completed' ? 'Hoàn thành' :
+                    record.status === 'checked_in' ? 'Đang làm' :
+                    record.status === 'absent' ? 'Vắng mặt' :
+                    'Chờ xử lý';
+
                   return (
                     <div key={record.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                       <div className="space-y-1">
@@ -469,7 +519,7 @@ const ShiftAttendanceWidget = () => {
                           }
                         </p>
                       </div>
-                      <Badge className={`${color} border-0`}>{statusText}</Badge>
+                      <Badge className={`${statusColor} border-0`}>{statusText}</Badge>
                     </div>
                   );
                 })
