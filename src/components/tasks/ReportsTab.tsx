@@ -89,10 +89,11 @@ const ReportsTab = ({ role }: { role: UserRole }) => {
       setMeetings(meetingsData || []);
 
     } catch (error) {
-      console.error('Error loading reports:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error loading reports:', errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to load reports",
+        title: "Lỗi tải báo cáo",
+        description: errorMessage || "Không thể tải báo cáo. Vui lòng thử lại sau.",
         variant: "destructive"
       });
     } finally {
@@ -253,7 +254,7 @@ const ReportsTab = ({ role }: { role: UserRole }) => {
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
           <p className="text-sm text-blue-900">
-            <strong>ℹ️ Thông tin:</strong> Báo cáo được lưu trữ trong cơ sở dữ liệu để theo dõi lịch sử và tạo báo cáo tổng hợp. Bất kỳ mục hành động nào từ biên bản họp sẽ tự động tạo thành công việc trong hệ thống.
+            <strong>���️ Thông tin:</strong> Báo cáo được lưu trữ trong cơ sở dữ liệu để theo dõi lịch sử và tạo báo cáo tổng hợp. Bất kỳ mục hành động nào từ biên bản họp sẽ tự động tạo thành công việc trong hệ thống.
           </p>
         </CardContent>
       </Card>
