@@ -362,12 +362,36 @@ const ShiftAttendanceWidget = () => {
             <div className="text-xs md:text-sm space-y-1 bg-muted/50 rounded p-2">
               {shiftRecord?.check_in && (
                 <p className="text-foreground">
-                  <span className="font-medium">Vào:</span> {format(new Date(shiftRecord.check_in), 'HH:mm')}
+                  <span className="font-medium">Vào:</span> {(() => {
+                    const isValidDate = (dateString: string | null): boolean => {
+                      if (!dateString) return false;
+                      const date = new Date(dateString);
+                      return date instanceof Date && !isNaN(date.getTime());
+                    };
+                    if (!isValidDate(shiftRecord.check_in)) return '---';
+                    try {
+                      return format(new Date(shiftRecord.check_in), 'HH:mm');
+                    } catch {
+                      return '---';
+                    }
+                  })()}
                 </p>
               )}
               {shiftRecord?.check_out && (
                 <p className="text-foreground">
-                  <span className="font-medium">Ra:</span> {format(new Date(shiftRecord.check_out), 'HH:mm')}
+                  <span className="font-medium">Ra:</span> {(() => {
+                    const isValidDate = (dateString: string | null): boolean => {
+                      if (!dateString) return false;
+                      const date = new Date(dateString);
+                      return date instanceof Date && !isNaN(date.getTime());
+                    };
+                    if (!isValidDate(shiftRecord.check_out)) return '---';
+                    try {
+                      return format(new Date(shiftRecord.check_out), 'HH:mm');
+                    } catch {
+                      return '---';
+                    }
+                  })()}
                 </p>
               )}
             </div>
