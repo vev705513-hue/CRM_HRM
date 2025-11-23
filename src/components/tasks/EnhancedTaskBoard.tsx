@@ -79,11 +79,14 @@ export const EnhancedTaskBoard = ({
   const [users, setUsers] = useState<Array<{ id: string; first_name?: string; last_name?: string; avatar_url?: string | null }>>([]);
 
   // Load all users
-  useMemo(async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, avatar_url');
-    if (data) setUsers(data);
+  useEffect(() => {
+    const loadUsers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url');
+      if (data) setUsers(data);
+    };
+    loadUsers();
   }, []);
 
   // Set first status on load
