@@ -477,10 +477,32 @@ const AttendanceWidget = () => {
             <TabsContent value="week" className="space-y-2 mt-4">
               {allRecords
                 .filter(r => {
+                  const isValidDate = (dateString: string | null): boolean => {
+                    if (!dateString) return false;
+                    const date = new Date(dateString);
+                    return date instanceof Date && !isNaN(date.getTime());
+                  };
+                  if (!isValidDate(r.timestamp)) return false;
                   const recordDate = new Date(r.timestamp);
                   return recordDate >= startOfWeek(new Date()) && recordDate <= endOfWeek(new Date());
                 })
-                .map((record) => (
+                .map((record) => {
+                  const isValidDate = (dateString: string | null): boolean => {
+                    if (!dateString) return false;
+                    const date = new Date(dateString);
+                    return date instanceof Date && !isNaN(date.getTime());
+                  };
+
+                  const formatDate = (dateString: string | null, formatStr: string) => {
+                    if (!isValidDate(dateString)) return '---';
+                    try {
+                      return format(new Date(dateString), formatStr);
+                    } catch {
+                      return '---';
+                    }
+                  };
+
+                  return (
                   <div key={record.id} className="flex items-center justify-between p-3 rounded-lg border">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -495,12 +517,13 @@ const AttendanceWidget = () => {
                       <div>
                         <p className="font-medium capitalize">{record.type.replace('_', ' ')}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(record.timestamp), 'MMM dd, yyyy · HH:mm')}
+                          {formatDate(record.timestamp, 'MMM dd, yyyy · HH:mm')}
                         </p>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
             </TabsContent>
 
             <TabsContent value="month" className="space-y-2 mt-4">
