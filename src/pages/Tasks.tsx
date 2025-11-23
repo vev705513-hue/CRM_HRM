@@ -112,7 +112,7 @@ const Tasks = () => {
               <span className="hidden sm:inline">Phân Bổ</span>
             </TabsTrigger>
 
-            {/* ======= NHÓM MỤC TIÊU – QUY TRÌNH ======= */}
+            {/* ======= NH��M MỤC TIÊU – QUY TRÌNH ======= */}
             {/* Mục tiêu / OKRs */}
             <TabsTrigger value="goals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2">
               <Target className="h-4 w-4" />
@@ -157,7 +157,14 @@ const Tasks = () => {
 
           {/* ======= NHÓM QUẢN LÝ CÔNG VIỆC ======= */}
           <TabsContent value="board" className="mt-6">
-            <TaskBoard role={role} />
+            {teamId && userId && (
+              <EnhancedTaskBoard
+                teamId={teamId}
+                userId={userId}
+                creatorData={creatorData}
+                assigneeData={assigneeData}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="list" className="mt-6">
