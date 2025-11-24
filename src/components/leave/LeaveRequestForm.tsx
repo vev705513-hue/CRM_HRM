@@ -72,19 +72,17 @@ const LeaveRequestForm = () => {
         e.preventDefault();
         setLoading(true);
 
-        // Kiểm tra điều kiện ngày
-        if (new Date(startDate) > new Date(endDate)) {
-             toast({
-                title: "Lỗi",
-                description: "Ngày kết thúc không được trước ngày bắt đầu.",
-                variant: "destructive",
-            });
-            setLoading(false);
-            return;
-        }
-
-
         try {
+            // Kiểm tra điều kiện ngày
+            if (new Date(startDate) > new Date(endDate)) {
+                throw new Error("Ngày kết thúc không được trước ngày bắt đầu.");
+            }
+
+            // Kiểm tra hạn mức nghỉ phép cho loại Annual
+            if (leaveType === 'annual' && estimatedDays > leaveBalance) {
+                throw new Error(`Bạn chỉ còn ${leaveBalance} ngày nghỉ phép, nhưng yêu cầu ${estimatedDays} ngày.`);
+            }
+
             const user = await getCurrentUser();
             if (!user) throw new Error("Chưa xác thực người dùng.");
 
@@ -95,7 +93,7 @@ const LeaveRequestForm = () => {
                 type: leaveType,
                 start_date: startDate,
                 end_date: endDate,
-                reason: descriptionDetail, // Gửi cả thông tin ngày công kèm theo lý do
+                reason: descriptionDetail,
                 status: "pending",
             };
 
@@ -105,7 +103,7 @@ const LeaveRequestForm = () => {
 
             toast({
                 title: "Yêu cầu đã gửi thành công",
-                description: "Yêu cầu nghỉ phép của bạn đang chờ phê duyệt.",
+                description: `Yêu cầu nghỉ phép ${estimatedDays} ngày của bạn đang chờ phê duyệt.`,
             });
 
             resetForm();
@@ -113,7 +111,7 @@ const LeaveRequestForm = () => {
             console.error("Lỗi gửi yêu cầu nghỉ phép:", error);
             toast({
                 title: "Lỗi",
-                description: "Không thể gửi yêu cầu nghỉ phép. Vui lòng thử lại.",
+                description: error instanceof Error ? error.message : "Không thể gửi yêu cầu nghỉ phép. Vui lòng thử lại.",
                 variant: "destructive",
             });
         } finally {
