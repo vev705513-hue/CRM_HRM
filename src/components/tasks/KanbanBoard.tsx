@@ -1,6 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-// Đã gỡ bỏ import lỗi và thay thế bằng định nghĩa hàm giả lập bên dưới
-import { createClient } from '@supabase/supabase-js'; 
+import { useState, useCallback, useEffect } from 'react'; 
 
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +30,7 @@ import { format } from 'date-fns';
 
 // Hàm giả lập (Mock function) cho createClient để đáp ứng yêu cầu của trình biên dịch và TypeScript.
 // Trong môi trường thực tế, Supabase client sẽ được khởi tạo qua import hoặc cấu hình môi trường.
-const createClient = (url: string, key: string): any => {
+function initializeSupabaseClient(url: string, key: string): Record<string, unknown> {
     // Cấu trúc mock client cần có đủ các hàm mà useBoard hook đang sử dụng.
     return {
         from: () => ({
@@ -55,11 +53,11 @@ const createClient = (url: string, key: string): any => {
         channel: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}), unsubscribe: () => ({}) }),
         removeChannel: () => ({}),
     };
-};
+}
 
 const supabaseUrl = 'https://gnxadfydbnigwboojhgw.supabase.co'; // Đã thay thế VITE_SUPABASE_URL
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdueGFkZnlkYm5pZ3dib29qaGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNDM5MDIsImV4cCI6MjA3ODcxOTkwMn0.Ul6InKjAyCOpzzecsdURtP9ighcneJEGWt1z2X9zPSc'; // Đã thay thế VITE_SUPABASE_PUBLISHABLE_KEY
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = initializeSupabaseClient(supabaseUrl, supabaseAnonKey);
 // ---------------------------------------------------------------------
 
 // Khai báo lại các interface Task và Field để tránh lỗi alias trong môi trường single file
@@ -94,7 +92,7 @@ interface Task {
 // --- MOCK/DUPLICATE useBoard HOOK LOGIC (Đã sửa lỗi RLS và thêm logic teamId) ---
 // CHÚ Ý: Logic này cần được tách ra thành file '@/hooks/use-board' trong môi trường thực tế.
 
-export const useBoard = (teamId: string) => {
+const useBoard = (teamId: string) => {
     const { toast } = useToast();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [fields, setFields] = useState<Field[]>([]);
@@ -441,7 +439,7 @@ export const KanbanBoard = ({ teamId, userId, users }: KanbanBoardProps) => {
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Tạo Cột Mới</DialogTitle>
+                            <DialogTitle>Tạo C��t Mới</DialogTitle>
                             <DialogDescription>Thêm một cột mới vào bảng của bạn (ví dụ: Đang làm, Chờ duyệt).</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleCreateColumn} className="space-y-4">
@@ -521,11 +519,11 @@ interface KanbanColumnProps {
     tasks: Task[];
     userId: string;
     users: Array<{ id: string; first_name?: string; last_name?: string; avatar_url?: string | null }>;
-    onCreateTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at'>) => Promise<any>;
-    onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<any>;
-    onDeleteTask: (taskId: string) => Promise<any>;
-    onDeleteField: (fieldId: string) => Promise<any>;
-    onUpdateField: (fieldId: string, updates: Partial<Field>) => Promise<any>;
+    onCreateTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at'>) => Promise<Task | undefined>;
+    onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<Task | undefined>;
+    onDeleteTask: (taskId: string) => Promise<void>;
+    onDeleteField: (fieldId: string) => Promise<void>;
+    onUpdateField: (fieldId: string, updates: Partial<Field>) => Promise<Field | undefined>;
 }
 
 const KanbanColumn = ({
@@ -597,7 +595,6 @@ const KanbanColumn = ({
                         users={users}
                         onUpdate={onUpdateTask}
                         onDelete={onDeleteTask}
-                        allFields={[]} // Không cần thiết ở đây, nhưng giữ lại nếu ý định kéo thả
                     />
                 ))}
 
@@ -631,7 +628,7 @@ const KanbanColumn = ({
                             </div>
                             <div>
                                 <Label htmlFor="task-priority">Ưu tiên</Label>
-                                <Select value={taskPriority} onValueChange={(v) => setTaskPriority(v as any)}>
+                                <Select value={taskPriority} onValueChange={(v) => setTaskPriority(v as 'low' | 'medium' | 'high' | 'urgent')}>
                                     <SelectTrigger id="task-priority">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -663,9 +660,8 @@ const KanbanColumn = ({
 interface TaskCardProps {
     task: Task;
     users: Array<{ id: string; first_name?: string; last_name?: string; avatar_url?: string | null }>;
-    onUpdate: (taskId: string, updates: Partial<Task>) => Promise<any>;
-    onDelete: (taskId: string) => Promise<any>;
-    // allFields: Field[]; // Giữ lại nếu cần cho tính năng kéo thả
+    onUpdate: (taskId: string, updates: Partial<Task>) => Promise<Task | undefined>;
+    onDelete: (taskId: string) => Promise<void>;
 }
 
 const TaskCard = ({ task, users, onUpdate, onDelete }: TaskCardProps) => {
@@ -750,7 +746,7 @@ const TaskCard = ({ task, users, onUpdate, onDelete }: TaskCardProps) => {
                         {/* Thêm các trường khác */}
                         <div>
                             <Label htmlFor="edit-priority">Ưu tiên</Label>
-                            <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v as any })}>
+                            <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v as 'low' | 'medium' | 'high' | 'urgent' })}>
                                 <SelectTrigger id="edit-priority">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -833,8 +829,8 @@ const TaskCard = ({ task, users, onUpdate, onDelete }: TaskCardProps) => {
 
 interface ColumnMenuProps {
     field: Field;
-    onDelete: (fieldId: string) => Promise<any>;
-    onUpdate: (fieldId: string, updates: Partial<Field>) => Promise<any>;
+    onDelete: (fieldId: string) => Promise<void>;
+    onUpdate: (fieldId: string, updates: Partial<Field>) => Promise<Field | undefined>;
 }
 
 const ColumnMenu = ({ field, onDelete, onUpdate }: ColumnMenuProps) => {
