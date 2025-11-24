@@ -515,30 +515,60 @@ const UsersManagement = () => {
                 </Dialog>
             </div>
             
-            {/* Modal Gán Vai trò */}
+            {/* Modal Gán Vai trò & Vị trí */}
             <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Gán vai trò cho {selectedUserForRole?.first_name} {selectedUserForRole?.last_name}</DialogTitle>
-                        <DialogDescription>Chọn vai trò mới cho người dùng này.</DialogDescription>
+                        <DialogDescription>Cập nhật vai trò, đội nhóm, và ca làm việc.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <Label htmlFor="role-select">Vai trò</Label>
-                        <Select value={selectedNewRole} onValueChange={setSelectedNewRole}>
-                            <SelectTrigger id="role-select" className="h-10"><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="hr">HR</SelectItem>
-                                <SelectItem value="leader">Leader</SelectItem>
-                                <SelectItem value="teacher">Teacher</SelectItem>
-                                <SelectItem value="it">IT</SelectItem>
-                                <SelectItem value="content">Content</SelectItem>
-                                <SelectItem value="design">Design</SelectItem>
-                                <SelectItem value="staff">Staff</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button className="w-full" onClick={handleUpdateRoleAndPosition}>
-                            Cập nhật vai trò
+                        <div>
+                            <Label htmlFor="role-select">Vai trò</Label>
+                            <Select value={selectedNewRole} onValueChange={setSelectedNewRole}>
+                                <SelectTrigger id="role-select" className="h-10"><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="hr">HR</SelectItem>
+                                    <SelectItem value="leader">Leader</SelectItem>
+                                    <SelectItem value="teacher">Teacher</SelectItem>
+                                    <SelectItem value="it">IT</SelectItem>
+                                    <SelectItem value="content">Content</SelectItem>
+                                    <SelectItem value="design">Design</SelectItem>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="team-select">Đội nhóm</Label>
+                            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                                <SelectTrigger id="team-select" className="h-10"><SelectValue placeholder="Chọn đội nhóm" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Không có</SelectItem>
+                                    {allTeams.map(team => (
+                                        <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="shift-select">Ca làm việc</Label>
+                            <Select value={selectedShift} onValueChange={setSelectedShift}>
+                                <SelectTrigger id="shift-select" className="h-10"><SelectValue placeholder="Chọn ca làm việc" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Không có</SelectItem>
+                                    {allShifts.map(shift => (
+                                        <SelectItem key={shift.id} value={shift.id}>{shift.name} ({shift.start_time} - {shift.end_time})</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <Button className="w-full" onClick={handleUpdateRoleAndPosition} disabled={loading}>
+                            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                            Cập nhật vai trò & vị trí
                         </Button>
                     </div>
                 </DialogContent>
