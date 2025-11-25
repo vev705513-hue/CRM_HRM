@@ -319,7 +319,7 @@ const DashboardLayout = ({ children, role = 'staff', organizationSection, onOrga
 
                                     if (isOrgMenu && userRole === 'admin') {
                                         return (
-                                            <Accordion key={item.path} type="single" collapsible value={expandedOrg}>
+                                            <Accordion key={item.path} type="single" collapsible value={expandedOrg || ''} onValueChange={setExpandedOrg}>
                                                 <AccordionItem value="org-menu">
                                                     <AccordionTrigger className={`w-full text-left font-medium text-base transition-all px-3 py-2 hover:bg-accent rounded-lg ${active ? 'bg-secondary' : ''}`}>
                                                         <div className="flex items-center gap-3 flex-1">
