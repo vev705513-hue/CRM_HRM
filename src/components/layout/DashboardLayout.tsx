@@ -83,6 +83,12 @@ const DashboardLayout = ({ children, role = 'staff', organizationSection, onOrga
     }, [organizationSection]);
 
     useEffect(() => {
+        if (tasksSection) {
+            setExpandedTasksState(tasksSection);
+        }
+    }, [tasksSection]);
+
+    useEffect(() => {
         const loadUser = async () => {
             const currentUser = await getCurrentUser();
             if (!currentUser) {
