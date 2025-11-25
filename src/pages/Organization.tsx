@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getUserRole, getCurrentUser } from "@/lib/auth";
 import { UserRole } from "@/lib/auth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import TeamsManagement from "@/components/organization/TeamsManagement";
 import ShiftsManagement from "@/components/organization/ShiftsManagement";
 import UsersManagement from "@/components/organization/UsersManagement";
 import AttendanceManagement from "@/components/organization/AttendanceManagement";
 import SalaryManagement from "@/components/organization/SalaryManagement";
 import SalaryStatistics from "@/components/organization/SalaryStatistics";
+import { Users, Clock, CheckSquare, BarChart3, DollarSign, LineChart } from "lucide-react";
 
 const Organization = () => {
  // Khởi tạo state role (vai trò) mặc định là 'staff' (nhân viên)
