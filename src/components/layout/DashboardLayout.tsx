@@ -10,7 +10,7 @@ import {
     LayoutDashboard, Users, CheckSquare, Calendar, LogOut, User,
     Moon, Sun, Clock, Settings, Menu, X, ListChecks, FileText, Briefcase, DollarSign, LineChart
 } from "lucide-react";
-// Giả định các hàm này trả về các kiểu đã đ��nh nghĩa
+// Giả định các hàm này trả về các kiểu đã định nghĩa
 import { getCurrentUser, getUserProfile, signOut, UserRole, getUserRole } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -204,6 +204,91 @@ const DashboardLayout = ({ children, role = 'staff', organizationSection, onOrga
                     <nav className="flex-1 space-y-1 p-4 pt-6">
                         {menuItems.map((item) => {
                             const active = isActive(item.path);
+                            const isOrgMenu = item.path === "/organization";
+
+                            if (isOrgMenu && userRole === 'admin') {
+                                return (
+                                    <Accordion key={item.path} type="single" collapsible value={expandedOrg}>
+                                        <AccordionItem value="org-menu">
+                                            <AccordionTrigger className={`w-full text-left font-medium text-base transition-all px-3 py-2 hover:bg-accent rounded-lg ${active ? 'bg-secondary' : ''}`}>
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                                                    <span className="truncate">{item.label}</span>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="mt-2 space-y-1 ml-6">
+                                                <Button
+                                                    variant={expandedOrg === 'teams' ? 'secondary' : 'ghost'}
+                                                    className="w-full justify-start text-sm"
+                                                    onClick={() => {
+                                                        setExpandedOrg('teams');
+                                                        if (onOrganizationSectionChange) onOrganizationSectionChange('teams');
+                                                        navigate('/organization');
+                                                    }}
+                                                >
+                                                    Đội nhóm
+                                                </Button>
+                                                <Button
+                                                    variant={expandedOrg === 'users' ? 'secondary' : 'ghost'}
+                                                    className="w-full justify-start text-sm"
+                                                    onClick={() => {
+                                                        setExpandedOrg('users');
+                                                        if (onOrganizationSectionChange) onOrganizationSectionChange('users');
+                                                        navigate('/organization');
+                                                    }}
+                                                >
+                                                    Người dùng
+                                                </Button>
+                                                <Button
+                                                    variant={expandedOrg === 'shifts' ? 'secondary' : 'ghost'}
+                                                    className="w-full justify-start text-sm"
+                                                    onClick={() => {
+                                                        setExpandedOrg('shifts');
+                                                        if (onOrganizationSectionChange) onOrganizationSectionChange('shifts');
+                                                        navigate('/organization');
+                                                    }}
+                                                >
+                                                    Ca làm
+                                                </Button>
+                                                <Button
+                                                    variant={expandedOrg === 'attendance' ? 'secondary' : 'ghost'}
+                                                    className="w-full justify-start text-sm"
+                                                    onClick={() => {
+                                                        setExpandedOrg('attendance');
+                                                        if (onOrganizationSectionChange) onOrganizationSectionChange('attendance');
+                                                        navigate('/organization');
+                                                    }}
+                                                >
+                                                    Chấm công
+                                                </Button>
+                                                <Button
+                                                    variant={expandedOrg === 'salary' ? 'secondary' : 'ghost'}
+                                                    className="w-full justify-start text-sm"
+                                                    onClick={() => {
+                                                        setExpandedOrg('salary');
+                                                        if (onOrganizationSectionChange) onOrganizationSectionChange('salary');
+                                                        navigate('/organization');
+                                                    }}
+                                                >
+                                                    Lương
+                                                </Button>
+                                                <Button
+                                                    variant={expandedOrg === 'statistics' ? 'secondary' : 'ghost'}
+                                                    className="w-full justify-start text-sm"
+                                                    onClick={() => {
+                                                        setExpandedOrg('statistics');
+                                                        if (onOrganizationSectionChange) onOrganizationSectionChange('statistics');
+                                                        navigate('/organization');
+                                                    }}
+                                                >
+                                                    Thống kê
+                                                </Button>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+                                );
+                            }
+
                             return (
                                 <Button
                                     key={item.path}
